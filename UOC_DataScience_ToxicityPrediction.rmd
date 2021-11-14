@@ -1,0 +1,124 @@
+---
+title: "UOC_DataScience_ToxicityPrediction"
+author: "Pablo Iriso Soret"
+date: "14/11/2021"
+output: html_document
+---
+
+```{r}
+#Load data
+library(readxl)
+
+#Explore
+library(Hmisc)
+
+#Tidy
+library(tidyverse)
+
+# RnadomForest
+library(caret)
+library(randomForest)
+library(rpart)
+```
+
+
+```{r}
+data <-  read.csv("C:\\Datasets\\CalidadAireUOC\\uoc_train.csv")
+example <- read.csv("C:\\Datasets\\CalidadAireUOC\\ejemplo_predicciones.csv")
+```
+
+
+
+EXPLORE
+
+```{r}
+head(data)
+```
+
+```{r}
+tail(data)
+```
+
+
+Check NAs
+
+```{r}
+colMeans(is.na(data))
+```
+
+```{r}
+describe(data)
+```
+
+
+
+Check distribution
+
+```{r}
+ggplot(stack(data), aes(x = ind, y = values)) +
+  geom_boxplot() +
+  theme_bw()
+```
+
+
+
+Dividimos datos
+
+```{r}
+#Para ordenarlo de forma aleatoria creamos una distribución aleatoria de todas las columnas
+set.seed(123)
+
+
+# Convertimos en codificacion factorial el etiquetado
+data$target <- as.factor(data$target)
+
+#Reordenamos aleatoriamente
+rows <- sample(nrow(data))
+data_n <- data[rows, ]
+
+#La expresión round(0.67*nrow(ort)), nos proporciona el elemento situado en la
+# posición correspondiente al 67% 
+index <- round(0.67*nrow(data_n))
+train <- data_n[1:index, ]
+test <- data_n[index:length(data_n$target),]
+
+#Etiquetas
+train_labels <- data_n[1:index, 9]
+test_labels <- data_n[index:length(data_n$target), 9]
+```
+
+
+
+Predicción y evaluación
+
+
+```{r}
+modfit <- randomForest(target~ ., data=train)
+pred <- predict(modfit, test, type="class")
+confusionMatrix(pred, test$target)
+```
+
+
+
+Predicción
+
+```{r}
+obj <- read.csv("C:\\Datasets\\CalidadAireUOC\\uoc_X_test.csv")
+```
+
+```{r}
+ggplot(stack(obj), aes(x = ind, y = values)) +
+  geom_boxplot() +
+  theme_bw()
+
+```
+
+
+Predicciones
+```{r}
+pred1 <- predict(modfit, obj, type="class")
+pred1 <- as.data.frame(pred1)
+write.csv(pred1, "C:\\Datasets\\CalidadAireUOC\\ToxicityPredictionsIriso.csv", row.names = FALSE)
+
+
+```
